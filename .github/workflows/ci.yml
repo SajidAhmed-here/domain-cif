@@ -33,14 +33,16 @@ jobs:
       with:
         python-version: ${{ matrix.python-version }}
         cache: pip
-        cache-dependency-path: dic2owl/pyproject.toml
+        cache-dependency-path: |
+          dic2owl/pyproject.toml
+          .github/ci-constraints.txt
 
     - name: Install runtime, test, and build dependencies
       # The existing [project].dev list is not an installable extra.
       # pytest-cov 5 supports Python 3.8; version 6 requires Python >=3.9.
       run: |
         python -m pip install --upgrade pip
-        python -m pip install -e ./dic2owl "pytest==8.3.4" "pytest-cov==5.0.0" "build==1.2.2.post1"
+        python -m pip install -c .github/ci-constraints.txt -e ./dic2owl "pytest==8.3.4" "pytest-cov==5.0.0" "build==1.2.2.post1"
         python -m pip check
 
     - name: Check installed CLI

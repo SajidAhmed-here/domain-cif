@@ -5,6 +5,8 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 import pytest
+from rdflib import Graph
+from rdflib.compare import isomorphic
 
 if TYPE_CHECKING:
     from typing import Callable
@@ -52,7 +54,10 @@ def test_local_file(
             Path(tmpdir) / "cif_core_minimized.ttl"
         )
 
-        assert generated_ttl == cif_ttl
+        assert isomorphic(
+            Graph().parse(data=generated_ttl, format="turtle"),
+            Graph().parse(data=cif_ttl, format="turtle"),
+        )
 
         content = [_ for _ in Path(tmpdir).iterdir() if _.is_file()]
         assert len(content) == 4, (
@@ -92,7 +97,10 @@ def test_output(
 
         generated_ttl = create_location_free_ttl(Path(out_ttl))
 
-        assert generated_ttl == cif_ttl
+        assert isomorphic(
+            Graph().parse(data=generated_ttl, format="turtle"),
+            Graph().parse(data=cif_ttl, format="turtle"),
+        )
 
         content = [_ for _ in Path(tmpdir).iterdir() if _.is_file()]
         assert len(content) == 1, (

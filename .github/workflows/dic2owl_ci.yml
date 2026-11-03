@@ -48,9 +48,8 @@ jobs:
         pip install -U setuptools wheel
 
         cd dic2owl
-        pip install -U .[dev]
-        pip install safety
-        pip install pylint
+        pip install -c ../.github/ci-constraints.txt .
+        pip install "safety==3.8.1" "pylint==3.3.4"
 
     - name: Run PyLint
       run: pylint --rcfile=dic2owl/pyproject.toml dic2owl/**/*.py
@@ -81,7 +80,7 @@ jobs:
         run: |
           python -m pip install -U pip
           pip install -U setuptools wheel
-          pip install -e dic2owl[dev]
+          pip install -c .github/ci-constraints.txt -e ./dic2owl "pytest==8.3.4" "pytest-cov==5.0.0"
 
       - name: Run unit tests with PyTest
         run: pytest -c dic2owl/pyproject.toml

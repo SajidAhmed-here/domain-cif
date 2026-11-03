@@ -261,13 +261,19 @@ def main(
     dicfile = dicfile if isinstance(dicfile, str) else str(dicfile.resolve())
 
     # Download the CIF dictionaries to current directory
-    baseurl = "https://raw.githubusercontent.com/COMCIFS/cif_core/master/"
+    baseurl = "https://raw.githubusercontent.com/COMCIFS/"
+    auxiliary_urls = {
+        "ddl.dic": baseurl + "DDLm/main/ddl.dic",
+        "templ_attr.cif": baseurl + "Attribute_Templates/main/templ_attr.cif",
+        "templ_enum.cif": baseurl + "Enumeration_Templates/main/templ_enum.cif",
+    }
     for dic in ("ddl.dic", "templ_attr.cif", "templ_enum.cif", dicfile):
         if not Path(dic).resolve().exists():
             print("downloading", dic)
             # Since `baseurl` is used, the retrieved URL will never be a
             # `file://` or similar.
-            urllib.request.urlretrieve(baseurl + dic, dic)  # nosec
+            url = auxiliary_urls.get(dic, baseurl + "cif_core/main/" + dic)
+            urllib.request.urlretrieve(url, dic)  # nosec
 
     gen = Generator(
         dicfile=dicfile, base_iri=base_iri, local_ddl=local_ontologies

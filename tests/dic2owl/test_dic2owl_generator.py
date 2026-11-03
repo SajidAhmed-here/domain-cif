@@ -5,6 +5,8 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 import pytest
+from rdflib import Graph
+from rdflib.compare import isomorphic
 
 if TYPE_CHECKING:
     from typing import Callable, List, Optional
@@ -90,4 +92,7 @@ def test_generate(
 
         generated_ttl = create_location_free_ttl(Path(output_turtle.name))
 
-        assert generated_ttl == cif_ttl
+        assert isomorphic(
+            Graph().parse(data=generated_ttl, format="turtle"),
+            Graph().parse(data=cif_ttl, format="turtle"),
+        )

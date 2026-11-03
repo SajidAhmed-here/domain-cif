@@ -1,0 +1,5 @@
+# Owlready2 0.49 cannot build with Python 3.8's supported setuptools.
+Owlready2==0.48
+# Upstream removed pickle-based parser loading after the last PyPI release.
+# Pin the source revision rather than ignoring CVE-2025-56005 in PLY 3.11.
+ply @ https://github.com/dabeaz/ply/archive/9d7c40099e23ff78f9d86ef69a26c1e8a83e706a.zip
