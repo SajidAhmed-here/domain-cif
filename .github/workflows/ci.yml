@@ -1,25 +1,100 @@
 name: CI
 
-on: [push]
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  pre-commit-basic:
-    runs-on: ubuntu-latest
+  dic2owl-test:
+    name: Test and build (Python ${{ matrix.python-version }})
+    runs-on: ubuntu-22.04
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ['3.8', '3.13']
 
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v4
-
-    - name: Set up Python 3.13
-      uses: actions/setup-python@v4
+      uses: actions/checkout@v7
       with:
-        python-version: '3.13'
+        persist-credentials: false
 
-    - name: Install dependencies
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v7
+      with:
+        python-version: ${{ matrix.python-version }}
+        cache: pip
+        cache-dependency-path: dic2owl/pyproject.toml
+
+    - name: Install runtime, test, and build dependencies
+      # The existing [project].dev list is not an installable extra.
+      # pytest-cov 5 supports Python 3.8; version 6 requires Python >=3.9.
       run: |
         python -m pip install --upgrade pip
-        pip install -U setuptools wheel
-        pip install pre-commit
+        python -m pip install -e ./dic2owl "pytest==8.3.4" "pytest-cov==5.0.0" "build==1.2.2.post1"
+        python -m pip check
 
-    - name: Run pre-commit
-      run: SKIP=pylint,mypy,black,bandit,requirements-txt-fixer pre-commit run --all-files
+    - name: Check installed CLI
+      run: |
+        dic2owl --version
+        dic2owl --help
+
+    - name: Run unit tests with coverage
+      # Existing tests fetch public dictionaries and ontologies from GitHub.
+      run: python -m pytest -c dic2owl/pyproject.toml tests/dic2owl
+
+    - name: Build source distribution and wheel
+      run: python -m build ./dic2owl
+
+  validate-data:
+    name: Validate repository data and configuration
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v7
+      with:
+        persist-credentials: false
+
+    - name: Set up Python 3.13
+      uses: actions/setup-python@v7
+      with:
+        python-version: '3.13'
+        cache: pip
+        cache-dependency-path: dic2owl/pyproject.toml
+
+    - name: Install validation dependencies
+      run: |
+        python -m pip install --upgrade pip
+        python -m pip install "pre-commit==4.0.1" "rdflib>=6,<8"
+        python -m pip check
+
+    - name: Run basic repository checks
+      # Preserve the original basic-check policy; code linting has its own workflow.
+      # The XML hook also matches Turtle files, which require an RDF parser.
+      env:
+        SKIP: pylint,mypy,black,bandit,requirements-txt-fixer,check-xml
+      run: pre-commit run --all-files
+
+    - name: Validate XML catalog and Turtle ontologies
+      run: |
+        python - <<'PY'
+        from pathlib import Path
+        import xml.etree.ElementTree as ET
+        from rdflib import Graph
+
+        ET.parse("ontology/catalog-v001.xml")
+        for path in sorted(Path("ontology").glob("*.ttl")) + sorted(Path("tests").rglob("*.ttl")):
+            graph = Graph().parse(path, format="turtle")
+            print(f"Validated {path}: {len(graph)} triples")
+        PY
