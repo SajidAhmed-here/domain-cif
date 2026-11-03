@@ -265,7 +265,8 @@ def main(
     auxiliary_urls = {
         "ddl.dic": baseurl + "DDLm/main/ddl.dic",
         "templ_attr.cif": baseurl + "Attribute_Templates/main/templ_attr.cif",
-        "templ_enum.cif": baseurl + "Enumeration_Templates/main/templ_enum.cif",
+        "templ_enum.cif": baseurl
+        + "Enumeration_Templates/main/templ_enum.cif",
     }
     for dic in ("ddl.dic", "templ_attr.cif", "templ_enum.cif", dicfile):
         if not Path(dic).resolve().exists():
